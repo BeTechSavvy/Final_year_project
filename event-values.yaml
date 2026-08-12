@@ -1,0 +1,17 @@
+image:
+  registry: docker.io
+  repository: resmoio/kubernetes-event-exporter
+  tag: latest
+
+global:
+  security:
+    allowInsecureImages: true
+
+livenessProbe:
+  enabled: false
+
+readinessProbe:
+  enabled: false
+
+startupProbe:
+  enabled: false
