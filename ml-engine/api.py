@@ -1,0 +1,54 @@
+"""
+api.py
+
+A small Flask API that sits between MongoDB and the React dashboard.
+The dashboard doesn't talk to MongoDB directly - it calls this API,
+which reads incidents (with their attached diagnoses) and returns
+them as JSON.
+
+Run this alongside your detection pipeline:
+    python api.py
+It starts on http://localhost:5050
+"""
+
+from flask import Flask, jsonify
+from flask_cors import CORS
+from incident_store import IncidentStore
+
+app = Flask(__name__)
+CORS(app)  # allows the React dev server (different port) to call this API
+
+store = IncidentStore()
+
+
+@app.route("/api/health", methods=["GET"])
+def health():
+    """Quick check the dashboard can use to confirm the API + Mongo are up."""
+    return jsonify({
+        "status": "ok",
+        "mongo_connected": store.is_connected(),
+    })
+
+
+@app.route("/api/incidents", methods=["GET"])
+def get_incidents():
+    """Returns the most recent incidents, newest first."""
+    incidents = store.get_recent_incidents(limit=50)
+    for doc in incidents:
+        doc["_id"] = str(doc["_id"])  # ObjectId isn't JSON-serializable by default
+    return jsonify(incidents)
+
+
+@app.route("/api/incidents/severity/<severity>", methods=["GET"])
+def get_incidents_by_severity(severity):
+    """e.g. /api/incidents/severity/high"""
+    incidents = store.get_by_severity(severity)
+    for doc in incidents:
+        doc["_id"] = str(doc["_id"])
+    return jsonify(incidents)
+
+
+if __name__ == "__main__":
+    if not store.is_connected():
+        print("Warning: MongoDB not reachable. The dashboard will show no data.")
+    app.run(port=5050, debug=True)
