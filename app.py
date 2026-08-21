@@ -18,6 +18,7 @@ flag as abnormal.
 """
 
 import random
+import time
 
 from flask import Flask, jsonify
 from prometheus_flask_exporter import PrometheusMetrics
@@ -33,10 +34,26 @@ def home():
 
 @app.route("/work")
 def work():
-    """Simulated workload endpoint with a realistic failure rate."""
+    """Simulated workload endpoint with a realistic baseline failure rate."""
     if random.random() < 0.10:
         return jsonify({"error": "simulated failure"}), 500
     return jsonify({"status": "ok"})
+
+
+@app.route("/spike-errors")
+def spike_errors():
+    """Always fails. Used deliberately to spike error_rate for demo/testing."""
+    return jsonify({"error": "deliberate spike"}), 500
+
+
+@app.route("/spike-load")
+def spike_load():
+    """Burns CPU briefly on purpose, to spike cpu_percent for demo/testing."""
+    end = time.time() + 0.3
+    x = 0
+    while time.time() < end:
+        x += 1
+    return jsonify({"status": "load generated", "iterations": x})
 
 
 if __name__ == "__main__":
